@@ -1,0 +1,21 @@
+1607417806594	geckodriver	INFO	Listening on 127.0.0.1:4903
+1607417812650	mozrunner::runner	INFO	Running command: "C:\\Program Files\\Mozilla Firefox\\firefox.exe" "--marionette" "-foreground" "-no-remote" "-profile" "C:\\Users\\IRLAB~1\\AppData\\Local\\Temp\\rust_mozprofilehUxNAe"
+JavaScript error: ib5nqmhud3d.cfg, line 2: ReferenceError: Components is not defined
+Can't find symbol 'eglSwapBuffersWithDamageEXT'.
+Can't find symbol 'eglSetDamageRegionKHR'.
+JavaScript error: resource://gre/modules/XULStore.jsm, line 66: Error: Can't find profile directory.
+console.warn: SearchSettings: "get: No settings file exists, new profile?" (new Error("", "(unknown module)"))
+1607417814393	Marionette	INFO	Listening on port 4914
+1607417814668	Marionette	WARN	TLS certificate errors will be ignored for this session
+Can't find symbol 'eglSwapBuffersWithDamageEXT'.
+Can't find symbol 'eglSetDamageRegionKHR'.
+JavaScript warning: http://www.shandong.gov.cn/api-gateway/jpaas-jiq-sdywtb/static/intergratedQuery/style/demo/ssqd/images/jquery.js, line 1: Using //@ to indicate sourceURL pragmas is deprecated. Use //# instead
+JavaScript warning: http://www.shandong.gov.cn/api-gateway/jpaas-jiq-sdywtb/static/intergratedQuery/style/demo/ssqd/images/jquery.js, line 1: Using //@ to indicate sourceURL pragmas is deprecated. Use //# instead
+JavaScript warning: http://www.shandong.gov.cn/api-gateway/jpaas-jiq-sdywtb/static/intergratedQuery/style/demo/ssqd/images/jquery.js, line 172: unreachable code after return statement
+1607418606547	Marionette	INFO	Stopped listening on port 4914
+
+###!!! [Child][RunMessage] Error: Channel closing: too late to send/recv, messages will be lost
+
+
+###!!! [Child][MessageChannel::SendAndWait] Error: Channel error: cannot send/recv
+
