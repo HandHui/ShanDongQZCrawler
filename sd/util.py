@@ -19,3 +19,15 @@ def S_search(pat,text):
     else:
         text1 = t.groups()[0]
     return text1
+
+def extract_url(text):
+    pat = '<a href="(.*?)".*?>(.*?)</a>'
+    url_name = re.search(pat,text,re.S)
+    if url_name:
+        url_name = url_name.groups()
+        # print(url_name)
+        url,name = url_name
+        name = name.strip()
+        return name + '('+url+')'
+    else:
+        return text
