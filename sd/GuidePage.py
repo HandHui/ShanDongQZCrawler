@@ -5,6 +5,30 @@ import re
 from bs4 import BeautifulSoup
 from tqdm import tqdm
 
+class TitleInfo:
+    def __init__(self):
+        self.con = {}
+    
+    def handle_info(self,text):
+        # print(text)
+
+        pat = '<p class="bg-title fl qiehuan".*?>(.*?)</p>'
+        btitle = S_search(pat,text)
+        self.con['标题'] = btitle
+
+        pat = '<div class="wz fl".*?>(.*?)</div>'
+        pos = S_search(pat,text)
+        self.con['位置'] = pos
+
+        pat = '<p class="con1-p">.*?<span.*?>(.*?)</span>.*?</p>'
+        con1 = re.findall(pat,text,re.S)
+        # print(con1)
+        if len(con1) == 3:
+            self.con['基本编码'] = con1[0]
+            self.con['实施编码'] = con1[1]
+            self.con['服务部门'] = con1[2]
+        # print(self.con)
+
 class BasicInfo:
 
     def __init__(self):
@@ -97,7 +121,7 @@ class Remedy:
             ps = re.findall('<p>(.*?)</p>',cons,re.S)
             tmp = {}
             for p in ps:
-                p = p.split('：')
+                p = p.split('：',1)
                 if len(p) == 2:
                     tmp[p[0]] = p[1]
                 else:
@@ -108,16 +132,26 @@ class Remedy:
 
     def handle_rem(self,tag):
         leg_tags = tag.find_all(class_="fljj fl")
+        if len(leg_tags) == 0:
+            self.con = None
+            return
         title,discu = self.handle_title_con(leg_tags[0])
         self.con[title] = discu
         if len(leg_tags) > 1:
             title,discu = self.handle_title_con(leg_tags[1])
             self.con[title] = discu
-        print(self.con)
+        # print(self.con)
 
-
-
+class Condition:
+    def __init__(self):
+        self.con = ""
     
+    def handle_cond(self,text):
+        txt1 = S_search('<div class="con2-p">(.*?)</div>',text)
+        txt1 = re.sub('<.*?>','',txt1)
+        self.con = txt1.strip()
+        # return txt1.strip()
+        # print(txt1.strip())
 
 
 class Material:
@@ -148,7 +182,6 @@ class Material:
             else:
                 return ""
 
-    
     def handleCon(self,text):
         thead = S_search('<thead>(.*?)</thead>',text)
         h_tds = re.findall('<td.*?>(.*?)</td>',thead,re.S)
@@ -184,6 +217,59 @@ class Material:
         
         return sample,blank
 
+class QA:
+    def __init__(self):
+        self.con = []
+    
+    def handle_qa(self,text):
+        text = S_search('<ul>(.*?)</ul>',text)
+        lis = re.findall('<li>(.*?)</li>',text,re.S)
+        for li in lis:
+            ind = S_search('<i class="shuzu">(.*?)</i>',li)
+            q = S_search('<p>(.*?)</p>',li)
+            a = S_search('<span>(.*?)</span>',li)
+            self.con.append((ind,q,a))
+            # print(ind,q,a)
+
+# http://www.shandong.gov.cn/api-gateway/jpaas-jiq-web-sdywtb/front/transition/ywTransToDetail?innerCode=1865
+class CC:
+    def __init__(self):
+        self.con = {}
+    
+    def handle_cc(self,text):
+        titles = re.findall('<p class="con2-l-tit">(.*?)</p>',text,re.S)
+        con2 = re.findall('<div class="con2-r-main">(.*?)</div>',text,re.S)
+        for i in range(len(con2)):
+        # for con in con2:
+            con = con2[i]
+            tmp = {}
+            ps = re.findall('<p>(.*?)</p>',con,re.S)
+            for p in ps:
+                # print(p)
+                mets = re.search('<span class="f-bold">(.*?)</span>(.*)',p,re.S)
+                if mets:
+                    mets = mets.groups()
+                    # print(mets)
+                    tmp[mets[0]] = mets[1].strip()
+            self.con[titles[i]] = tmp
+        # print(self.con)
+
+class Fee:
+
+    def __init__(self):
+        self.con = {}
+    
+    def handle_fee(self,text):
+        con2 = S_search('<div class="con2-r-main">(.*?)</div>',text)
+        ps = re.findall('<p>(.*?)</p>',con2,re.S)
+        for p in ps:
+            fs = re.search('<strong>(.*?)</strong>(.*)',p,re.S)
+            if fs:
+                fs = fs.groups()
+                self.con[fs[0]] = fs[1].strip()
+        # print(self.con)
+
+            
 
 
 class GuidePage:
@@ -200,11 +286,21 @@ class GuidePage:
         self.content['pid'] = pid
         self.content['idx'] = idx
         self.content['url'] = url
+        # print(url)
 
-    
     def handle_con(self):
         text = self.browser.page_source
         soup = BeautifulSoup(text,'lxml')
+
+        ## title信息
+        text_ti = soup.find_all(class_='fixed-box')
+        if len(text_ti) == 0:
+            print('No Title Information')
+        else:
+            text_ti = str(text_ti[0])
+            ti = TitleInfo()
+            ti.handle_info(text_ti)
+            self.content['标题信息'] = ti.con
 
         ## 基本信息
         text_bi = soup.find_all(id='md1')
@@ -254,8 +350,17 @@ class GuidePage:
             textl = textl[0]
             rem = Remedy()
             rem.handle_rem(textl)
-
-            
+            self.content['法律救济'] = rem.con
+        
+        ## 受理条件
+        textc = soup.find_all(id="md6")
+        if len(textc) == 0:
+            print("No Condition")
+        else:
+            textc = str(textc[0])
+            cond = Condition()
+            cond.handle_cond(textc)
+            self.content['受理条件'] = cond.con
 
 
         ## 材料目录
@@ -271,7 +376,42 @@ class GuidePage:
             if self.flag == 1:
                 return mat.handle_len()
             # print(mat.con)
+                
+        ## 常见问题
+        textq = soup.find_all(class_='con-r-list2 pt2')
+        if len(textq) == 0:
+            print('No QA')
+        else:
+            textq = str(textq[0])
+            qa = QA()
+            qa.handle_qa(textq)
+            self.content['常见问题'] = qa.con
+        
+        ## 咨询/投诉方式
+        textc = soup.find_all(class_='con-r-list pt3')
+        if len(textc) == 0:
+            print("No Consult/Complaint")
+        else:
+            textc = str(textc[0])
+            cc = CC()
+            cc.handle_cc(textc)
+            self.content['咨询/投诉方式'] = cc.con
+        
+        ## 收费信息
+        textf = soup.find_all(class_='con-r-list pt4')
+        if len(textf) == 0:
+            print('No Fee')
+        else:
+            textf = str(textf[0])
+            fee = Fee()
+            fee.handle_fee(textf)
+            self.content['收费信息'] = fee.con
     
+    def saveToFile(self,path):
+        self.handle_con()
+        saveToFile(path+str(self.content['pid'])+'_'+str(self.content['idx'])+'.json',self.content)
+
+
     # def unfold(self):
     #     pat = '<div class="(tab-btn zk.*?)".*?>.*?</div>'
     #     text = self.browser.page_source
@@ -290,28 +430,30 @@ class GuidePage:
 
 
 
-# res = getFromFile('../SDQZdata/pagedetail_sd.json')
-# browser = webdriver.Firefox()
-# sample,blank = 0,0
-# for r in tqdm(res):
-#     if '实施清单' in r:
-#         nxp_lst = r['实施清单']
-#         # print(r)
-#         pid = r['idx']
-#         if pid % 100 == 0:
-#             print(sample,blank)
-#         for i in range(len(nxp_lst)):
-#             nxp = nxp_lst[i]
-#             url = nxp['nxurl']
-#             # title = nxp['nxtitle']
-#             # dep = nxp['bm_dep']
-#             gp = GuidePage(pid,i,url,browser,0)
+res = getFromFile('../SDQZdata/pagedetail_qd.json')
+browser = webdriver.Firefox()
+sample,blank = 0,0
+for r in tqdm(res):
+    if '实施清单' in r:
+        nxp_lst = r['实施清单']
+        # print(r)
+        pid = r['idx']
+        # if pid % 100 == 0:
+        #     print(sample,blank)
+        for i in range(len(nxp_lst)):
+            nxp = nxp_lst[i]
+            url = nxp['nxurl']
+            # title = nxp['nxtitle']
+            # dep = nxp['bm_dep']
+            gp = GuidePage(pid,i,url,browser,0)
+            # gp.handle_con()
+            gp.saveToFile('../SDQZdata/qd/')
 
-#             ts_tb = gp.handle_con()
-#             if ts_tb:
-#                 ts,tb = ts_tb
-#                 sample += ts
-#                 blank += tb
+            # ts_tb = gp.handle_con()
+            # if ts_tb:
+            #     ts,tb = ts_tb
+            #     sample += ts
+            #     blank += tb
 ### 山东省
 ## 3800 1277 1180
 ## 3801: 918 844
@@ -321,8 +463,8 @@ class GuidePage:
             
             
         
-# url = 'http://www.shandong.gov.cn/api-gateway/jpaas-jiq-web-sdywtb/front/transition/ywTransToDetail?innerCode=21686'
-url = 'http://www.shandong.gov.cn/api-gateway/jpaas-jiq-web-sdywtb/front/transition/ywTransToDetail?innerCode=603'
-browser = webdriver.Firefox()
-gp = GuidePage(1,1,url,browser)
-gp.handle_con()
+# # url = 'http://www.shandong.gov.cn/api-gateway/jpaas-jiq-web-sdywtb/front/transition/ywTransToDetail?innerCode=21686'
+# url = 'http://www.shandong.gov.cn/api-gateway/jpaas-jiq-web-sdywtb/front/transition/ywTransToDetail?innerCode=603'
+# browser = webdriver.Firefox()
+# gp = GuidePage(1,1,url,browser)
+# gp.saveToFile('../SDQZdata/sd/')

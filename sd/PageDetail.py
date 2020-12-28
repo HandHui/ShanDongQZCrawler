@@ -201,13 +201,14 @@ class PageDetail:
 # 第三阶段
 # print(os.listdir('../SDQZdata/'))
 # 添加region_code对内容进行限制，只爬取省级信息
-res = getFromFile('../SDQZdata/pagedetail2.json')
+res = getFromFile('../SDQZdata/pagedetail_all.json')
+# pagedetail2中 包含着 山东省的全部信息，本阶段是进行简化，只爬取省级/青岛市级别的数据
 # idx = 123
 # url_code = None
 # url = 'http://www.shandong.gov.cn/api-gateway/jpaas-jiq-web-sdywtb/front/item/qzqdej_index?itemCode=E33CF7C910D04B80A01D1BE484878972'
 ans = []
 browser = webdriver.Firefox()
-region_code = '370000000000'
+region_code = '370200000000'
 
 for r in tqdm(res):
     idx = r['idx']
@@ -233,10 +234,10 @@ for r in tqdm(res):
             print("wait 10 sec!!!")
             time.sleep(10)
         
-        if idx % 100 == 0:
-            saveToFile('sd/pagedetail_sd.json',ans)
+    if idx % 100 == 0:
+        saveToFile('sd/pagedetail_qd.json',ans)
 
-saveToFile('sd/pagedetail_sd.json',ans)
+saveToFile('sd/pagedetail_qd.json',ans)
         
 
         
